@@ -4,6 +4,8 @@ import { SearchResultsType } from '@/utils/types'
 import { MusicCard } from './MusicCard'
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import useNavigationEvent from '@/hooks/useNavigationEvent';
+import React from 'react';
 
 type MusicCardListProps = {
   term: string,
@@ -16,21 +18,26 @@ export const MusicCardList = ({ results, term, pageNumber }: MusicCardListProps)
   // const [searchResults, setSearchResults] = useState<SearchResultsType[]>([]);
   const pathname = usePathname();
 
-  // NOTE: following a more client centric rendering approach like below preserves scroll
-  // with Next13
-  // useEffect(() => {
-  //   if (pageNumber > 1) {
-  //     fetch(`/api/search?term=${term}&pageNumber=${pageNumber}`)
-  //       .then(response => response.json())
-  //       .then(json => setSearchResults([...searchResults, ...json.results]));
-  //   }
-  // }, [pageNumber])
+  const [scroll, setScroll] = React.useState<number | null>(null);
 
-  // useEffect(() => {
-  //   setSearchResults(results);
-  // }, [results])
+  // Handle the clicking of the link,
+  // update state with current scroll amount
+  const onClick = () => {
+    setScroll(window.scrollY);
+  };
 
-  // const loadMore = useCallback(() => setPageNumber(state => state + 1), [])
+  // Hook for running action after a navigation event
+  useNavigationEvent(() => {
+    // Stops and extra render if the scroll value hasn't been set,
+    // doesn't run in scroll is `0` too which is a nice bonus.
+    if (scroll) {
+      window.scrollTo({
+        top: scroll,
+        left: 0,
+      });
+      setScroll(null);
+    }
+  });
 
   return (
     <>
@@ -43,6 +50,7 @@ export const MusicCardList = ({ results, term, pageNumber }: MusicCardListProps)
       <Link
         data-testid="load-more"
         scroll={false}
+        onClick={onClick}
         className="mt-4 w-24 h-24 bg-red-600 text-white text-sm font-medium rounded-full flex items-center justify-center hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
         href={`${pathname}?term=${encodeURI(term)}&pageNumber=${(pageNumber + 1).toString()}`}
       >
